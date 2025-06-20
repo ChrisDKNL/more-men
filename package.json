@@ -1,0 +1,37 @@
+{
+  "name": "more-men",
+  "version": "1.0.0",
+  "description": "A desktop app built with Electron to manage presets and configurations.",
+  "author": "Chris de Krijger",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.chrisdk.moremen",
+    "productName": "MoreMen",
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "**/*",
+      "!dist",
+      "!node_modules/.cache",
+      "!**/*.log"
+    ],
+    "extraMetadata": {
+      "version": "1.0.0"
+    }
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.2"
+  }
+}

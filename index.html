@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Presets Viewer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: #f4f4f4;
+    }
+    .tab-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    .tabs {
+      display: flex;
+      background-color: #333;
+      overflow-x: auto;
+    }
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      color: white;
+    }
+    .tab.active {
+      background-color: #555;
+      font-weight: bold;
+    }
+    .tab-content {
+      flex-grow: 1;
+      padding: 20px;
+      background-color: #fff;
+      overflow-y: auto;
+    }
+    pre {
+      background: #eee;
+      padding: 10px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="tab-container">
+    <div style="padding: 10px; background: #ddd;">
+      <button onclick="loadFromResource()">📁 Load Resource Folder</button>
+      <select id="fileSelector" onchange="handleFileSelect()"></select>
+      <button onclick="applyPreset()">✅ Apply</button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="tab-content" id="tabContent"></div>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>

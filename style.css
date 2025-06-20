@@ -1,0 +1,42 @@
+.tab-buttons {
+  margin-bottom: 10px;
+}
+
+.tablink {
+  background-color: #444;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.tablink.active {
+  background-color: #0078D7;
+}
+
+.tabcontent {
+  display: none;
+  background: #2a2a2a;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.config-form label {
+  font-weight: bold;
+}
+
+.config-form input {
+  padding: 6px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.config-form textarea {
+  min-height: 50px;
+  font-family: monospace;
+  padding: 6px;
+  font-size: 14px;
+  resize: vertical;
+}
+
