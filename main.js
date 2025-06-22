@@ -6,6 +6,38 @@ const { parsePresetsFromFile } = require('./parser.js');
 const { updatePresetInFile } = require('./paster.js');
 const axios = require('axios');
 
+
+// Electron store test
+let store;
+
+(async () => {
+  const Store = (await import('electron-store')).default;
+  store = new Store();
+})();
+
+ipcMain.handle('select-resource-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+  });
+
+  if (result.canceled || result.filePaths.length === 0) return null;
+
+  const resourceRoot = result.filePaths[0];
+
+  // Save folder path
+  store.set('resourcePath', resourceRoot);
+
+  return resourceRoot;
+});
+
+ipcMain.handle('get-stored-resource-folder', () => {
+  return store.get('resourcePath', null);
+});
+
+
+
+
+// -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 let mainWindow;
 
 function createWindow() {
@@ -21,36 +53,6 @@ function createWindow() {
 }
 
 app.whenReady().then(createWindow);
-
-ipcMain.handle('select-resource-folder', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory'],
-  });
-
-  if (result.canceled || result.filePaths.length === 0) return null;
-
-  const resourceRoot = result.filePaths[0];
-  const presetDir = path.join(resourceRoot, 'set', 'multiplayer', 'games', 'presets');
-
-  if (!fs.existsSync(presetDir)) {
-    return { error: `'presets' folder not found at expected path:\n${presetDir}` };
-  }
-
-  const fileMap = {};
-  const files = fs.readdirSync(presetDir).filter(f => f.endsWith('.inc'));
-
-  for (const fileName of files) {
-    const fullPath = path.join(presetDir, fileName);
-    try {
-      const presets = parsePresetsFromFile(fullPath);
-      fileMap[fileName] = { filePath: fullPath, presets };
-    } catch (err) {
-      fileMap[fileName] = { error: `Failed to parse: ${err.message}` };
-    }
-  }
-
-  return fileMap;
-});
 
 ipcMain.handle('apply-preset-to-file', async (_, filePath, preset) => {
   try {
@@ -105,4 +107,27 @@ ipcMain.handle('sync-presets-from-server', async () => {
   } catch (err) {
     throw new Error(`Download failed: ${err.message}`);
   }
+});
+
+ipcMain.handle('load-presets-from-resource', async (_, resourceRoot) => {
+  const presetDir = path.join(resourceRoot, 'set', 'multiplayer', 'games', 'presets');
+
+  if (!fs.existsSync(presetDir)) {
+    return { error: `'presets' folder not found:\n${presetDir}` };
+  }
+
+  const fileMap = {};
+  const files = fs.readdirSync(presetDir).filter(f => f.endsWith('.inc'));
+
+  for (const fileName of files) {
+    const fullPath = path.join(presetDir, fileName);
+    try {
+      const presets = parsePresetsFromFile(fullPath);
+      fileMap[fileName] = { filePath: fullPath, presets };
+    } catch (err) {
+      fileMap[fileName] = { error: `Failed to parse: ${err.message}` };
+    }
+  }
+
+  return fileMap;
 });

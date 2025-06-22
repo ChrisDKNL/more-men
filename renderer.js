@@ -278,3 +278,56 @@ document.getElementById('syncFromServerBtn').addEventListener('click', async () 
     alert('Sync failed: ' + err.message);
   }
 });
+
+
+async function setResourceFolder() {
+  const resourcePath = await window.api.selectResourceFolder();
+  if (resourcePath) {
+    await loadPresetsFrom(resourcePath);
+  }
+}
+
+async function loadStoredFolderOnStartup() {
+  const resourcePath = await window.api.getStoredResourceFolder();
+  if (resourcePath) {
+    await loadPresetsFrom(resourcePath);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadStoredFolderOnStartup();
+});
+
+async function loadPresetsFrom(resourcePath) {
+  const result = await window.api.loadPresetsFromResource(resourcePath);
+  if (!result) return;
+
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+
+  fileMap = result;
+  modifiedConfigs.clear();
+
+  const fileSelector = document.getElementById('fileSelector');
+  fileSelector.innerHTML = '';
+
+  for (const [fileName, data] of Object.entries(fileMap)) {
+    if (data.error) continue;
+    const option = document.createElement('option');
+    option.value = fileName;
+    option.textContent = fileName;
+    fileSelector.appendChild(option);
+  }
+
+  const firstValid = Object.keys(fileMap).find(name => !fileMap[name].error);
+  if (firstValid) {
+    fileSelector.value = firstValid;
+    renderFile(firstValid);
+  } else {
+    document.getElementById('tabs').innerHTML = '';
+    document.getElementById('tabContent').innerHTML = '<p>No valid presets found.</p>';
+  }
+}
+
