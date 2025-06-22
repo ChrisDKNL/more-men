@@ -5,20 +5,34 @@ function updatePresetInFile(filePath, presetObject) {
   const lines = fileContent.split('\n');
 
   const { title, configName, config } = presetObject;
-  const targetTitleLine = `{"s:${title}"`;
+  const customPrefix = `{"c:${title}"`;
+  const nonCustomPattern = new RegExp(`\\{"[^c]:${title}"`);
+
   let updatedLines = [...lines];
   let foundTitleIndex = -1;
+  let foundNonCustom = false;
 
-  // Step 1: Find the line with the matching title
+  // Step 1: Look specifically for {"c:<title>"
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(targetTitleLine)) {
+    const line = lines[i];
+
+    if (line.includes(customPrefix)) {
       foundTitleIndex = i;
       break;
+    }
+
+    if (nonCustomPattern.test(line)) {
+      foundNonCustom = true;
     }
   }
 
   if (foundTitleIndex === -1) {
-    throw new Error(`Could not find preset with title "${title}" in file.`);
+    if (foundNonCustom) {
+      console.log(`Skipped non-custom "${title}"`);
+    } else {
+      console.log(`Skipped not found "${title}"`);
+    }
+    return;
   }
 
   // Step 2: Go 5 lines down from the title line
@@ -26,10 +40,11 @@ function updatePresetInFile(filePath, presetObject) {
   const originalConfigLine = lines[configLineIndex] || '';
 
   if (!originalConfigLine.includes(`("${configName}"`)) {
-    throw new Error(`Config line at index ${configLineIndex} does not match configName "${configName}".`);
+    console.log(`Skipped "${title}" — configName mismatch at line ${configLineIndex}`);
+    return;
   }
 
-  // Step 3: Construct the new config line
+  // Step 3: Build the new config line
   const configTokens = Object.entries(config).map(([key, val]) => {
     if (Array.isArray(val)) {
       return `${key}(${val.join(',')})`;
@@ -40,12 +55,12 @@ function updatePresetInFile(filePath, presetObject) {
 
   const newConfigLine = `\t\t("${configName}"\t\t\t${configTokens.join(' ')})`;
 
-  // Step 4: Replace the line in the copy of file content
+  // Step 4: Replace the config line
   updatedLines[configLineIndex] = newConfigLine;
 
-  // Step 5: Write back to file
+  // Step 5: Write the updated file back
   fs.writeFileSync(filePath, updatedLines.join('\n'), 'utf8');
-  console.log(`Successfully updated config for "${title}" in file.`);
+  console.log(`Updated "${title}"`);
 }
 
 module.exports = { updatePresetInFile };

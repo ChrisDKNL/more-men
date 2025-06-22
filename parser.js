@@ -59,9 +59,9 @@ function parsePresetsFromFile(filePath) {
 
   const presetObjects = presets.map(parsePreset);
 
-  presetObjects.forEach((preset, i) => {
-    console.log(`Preset ${i + 1}:`, JSON.stringify(preset, null, 2));
-  });
+  // presetObjects.forEach((preset, i) => {
+  //   console.log(`Preset ${i + 1}:`, JSON.stringify(preset, null, 2));
+  // });
 
   return presetObjects;
 }

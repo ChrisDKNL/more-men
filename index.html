@@ -44,9 +44,13 @@
 <body>
   <div class="tab-container">
     <div style="padding: 10px; background: #ddd;">
-      <button onclick="loadFromResource()">📁 Load Resource Folder</button>
+      <button onclick="setResourceFolder()">📁 Set Resource Folder</button>
       <select id="fileSelector" onchange="handleFileSelect()"></select>
       <button onclick="applyPreset()">✅ Apply</button>
+      <button onclick="exportAllPresets()">Export Changes</button>
+      <button onclick="importAllPresets()">Import Changes</button>
+      <button id="syncToServerBtn">Sync to Server</button>
+      <button id="syncFromServerBtn">Sync from Server</button>
     </div>
     <div class="tabs" id="tabs"></div>
     <div class="tab-content" id="tabContent"></div>

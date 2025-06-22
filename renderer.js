@@ -1,5 +1,7 @@
 let fileMap = {};
 let currentPresets = [];
+const modifiedConfigs = new Map(); // Maps preset.title to updated config
+
 
 async function loadFromResource() {
   const result = await window.api.loadPresetsFromResource();
@@ -17,6 +19,10 @@ async function loadFromResource() {
 
   for (const [fileName, data] of Object.entries(fileMap)) {
     if (data.error) continue;
+    // Add filePath to each preset object
+    data.presets.forEach(preset => {
+      preset.filePath = data.filePath;
+    });
     const option = document.createElement('option');
     option.value = fileName;
     option.textContent = fileName;
@@ -34,9 +40,11 @@ async function loadFromResource() {
 }
 
 function handleFileSelect() {
+  saveCurrentFormData(); // Save form before switching files
   const selectedFile = document.getElementById('fileSelector').value;
   renderFile(selectedFile);
 }
+
 
 function renderFile(fileName) {
   const { presets } = fileMap[fileName];
@@ -58,6 +66,9 @@ function renderTabs(presets) {
     tab.dataset.index = index;
 
     tab.addEventListener('click', () => {
+      // 💾 Save current tab's form data before switching
+      saveCurrentFormData();
+
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       showPresetContent(presets[index]);
@@ -72,9 +83,12 @@ function renderTabs(presets) {
   });
 }
 
+
 function showPresetContent(preset) {
   const tabContent = document.getElementById('tabContent');
-  const config = preset.config;
+  const fileName = document.getElementById('fileSelector').value;
+  const saved = modifiedConfigs.get(fileName)?.get(preset.title);
+  const config = saved ? saved : preset.config;
 
   tabContent.innerHTML = `
     <h2>${preset.title}</h2>
@@ -95,159 +109,172 @@ function showPresetContent(preset) {
 
     container.appendChild(label);
 
-  if (key === 'cp_a' || key === 'cp_b') {
-    // Create toggle checkbox
-    const toggleLabel = document.createElement('label');
-    toggleLabel.style.marginLeft = '10px';
-    toggleLabel.style.fontWeight = 'normal';
-    toggleLabel.style.fontSize = '0.9em';
+    const input = document.createElement('input');
+    input.name = key;
+    input.style.width = '100%';
 
-    const toggle = document.createElement('input');
-    toggle.type = 'checkbox';
-    toggle.checked = Array.isArray(value);
-    toggle.style.marginRight = '6px';
-
-    toggleLabel.appendChild(toggle);
-    toggleLabel.appendChild(document.createTextNode('Scaling mode'));
-    container.appendChild(toggleLabel);
-
-    // Create inputs for scaling (textarea) and static (number input)
-    const scalingInput = document.createElement('textarea');
-    scalingInput.style.width = '100%';
-    scalingInput.style.display = toggle.checked ? 'block' : 'none';
-
-    // If scaling, join values formatted as time:value (assuming array of strings or objects)
-    if (toggle.checked) {
-      if (Array.isArray(value)) {
-        // Assuming each element is like "time:value" string or an object with time/value keys
-        scalingInput.value = value.join(', ');
-      } else {
-        scalingInput.value = '';
-      }
+    if (Array.isArray(value)) {
+      input.type = 'text';
+      input.value = value.join(', ');
+      input.title = 'Comma-separated values';
+    } else if (!isNaN(value)) {
+      input.type = 'number';
+      input.value = value;
     } else {
-      scalingInput.value = '';
+      input.type = 'text';
+      input.value = value;
     }
 
-    scalingInput.placeholder = 'e.g. 0:100, 60:200, 120:300';
-
-    const staticInput = document.createElement('input');
-    staticInput.type = 'number';
-    staticInput.style.width = '100%';
-    staticInput.style.display = toggle.checked ? 'none' : 'block';
-    staticInput.value = !toggle.checked ? value : (Array.isArray(value) ? value[0] : '');
-
-    container.appendChild(scalingInput);
-    container.appendChild(staticInput);
-
-    toggle.addEventListener('change', () => {
-      if (toggle.checked) {
-        scalingInput.style.display = 'block';
-        staticInput.style.display = 'none';
-        // Convert static to scaling format if needed
-        if (staticInput.value) {
-          scalingInput.value = `${0}:${staticInput.value}`;  // simple default time=0
-        }
-      } else {
-        scalingInput.style.display = 'none';
-        staticInput.style.display = 'block';
-        // Convert scaling to static if needed (take first value's value part)
-        if (scalingInput.value) {
-          // Extract first value after colon
-          const firstEntry = scalingInput.value.split(',')[0].trim();
-          const parts = firstEntry.split(':');
-          staticInput.value = parts.length > 1 ? parts[1] : parts[0];
-        }
-      }
-    });
-
-    } else {
-      // For everything else just a single input
-      const input = document.createElement('input');
-      input.name = key;
-      input.style.width = '100%';
-
-      if (Array.isArray(value)) {
-        input.type = 'text';
-        input.value = value.join(', ');
-        input.title = 'Comma-separated values';
-      } else if (!isNaN(value)) {
-        input.type = 'number';
-        input.value = value;
-      } else {
-        input.type = 'text';
-        input.value = value;
-      }
-
-      container.appendChild(input);
-    }
-
+    container.appendChild(input);
     form.appendChild(container);
   }
 
   tabContent.appendChild(form);
 }
 
+
 async function applyPreset() {
-  const fileSelector = document.getElementById('fileSelector');
-  const fileName = fileSelector.value;
+  saveCurrentFormData(); // Save the last changes before applying
 
-  if (!fileMap[fileName]) {
-    alert('No file selected.');
-    return;
-  }
+  const allUpdates = [];
 
-  const presetIndex = [...document.querySelectorAll('.tab')].findIndex(tab => tab.classList.contains('active'));
-  if (presetIndex === -1) {
-    alert('No preset selected.');
-    return;
-  }
+  for (const [fileName, presetMap] of modifiedConfigs.entries()) {
+    const fileInfo = fileMap[fileName];
+    if (!fileInfo || !fileInfo.presets || !fileInfo.filePath) continue;
 
-  const preset = fileMap[fileName].presets[presetIndex];
-  const updatedConfig = {};
+    for (const [presetTitle, updatedConfig] of presetMap.entries()) {
+      const originalPreset = fileInfo.presets.find(p => p.title === presetTitle);
+      if (!originalPreset) continue;
 
-  const form = document.querySelector('.config-form');
-  const inputs = form.querySelectorAll('input, textarea');
+      const updatedPreset = {
+        ...originalPreset,
+        config: updatedConfig,
+      };
 
-  for (const input of inputs) {
-    const label = input.previousElementSibling?.textContent?.trim();
-
-    if (!label) continue;
-
-    if (label === 'cp_a' || label === 'cp_b') {
-      const container = input.parentElement;
-      const toggle = container.querySelector('input[type=checkbox]');
-      const scalingInput = container.querySelector('textarea');
-      const staticInput = container.querySelector('input[type=number]:not([name])');
-
-      if (toggle.checked) {
-        // Scaling mode
-        updatedConfig[label] = scalingInput.value
-          .split(',')
-          .map(val => parseInt(val.trim(), 10))
-          .filter(val => !isNaN(val));
-      } else {
-        // Static mode
-        updatedConfig[label] = parseInt(staticInput.value.trim(), 10);
-      }
-
-    } else {
-      if (input.type === 'number') {
-        updatedConfig[label] = parseInt(input.value, 10);
-      } else if (input.type === 'text') {
-        updatedConfig[label] = input.value;
-      }
+      // Push update promise
+      allUpdates.push(
+        window.api.applyPresetToFile(fileInfo.filePath, updatedPreset)
+      );
     }
   }
 
-  const updatedPreset = {
-    ...preset,
-    config: updatedConfig,
-  };
-
   try {
-    await window.api.applyPresetToFile(fileMap[fileName].filePath, updatedPreset);
-    alert('Preset updated successfully.');
+    await Promise.all(allUpdates);
+
+    // ✅ Clear saved modifications
+    modifiedConfigs.clear();
+
+    // 🔄 Reload resource folder
+    await loadFromResource();
+
+    alert('All presets applied and reloaded successfully.');
   } catch (err) {
-    alert('Failed to apply preset: ' + err.message);
+    alert('Failed to apply one or more presets: ' + err.message);
   }
 }
+
+
+
+function saveCurrentFormData() {
+  const fileName = document.getElementById('fileSelector').value;
+  const activeTab = document.querySelector('.tab.active');
+  if (!activeTab) return;
+
+  const presetTitle = activeTab.textContent;
+  const form = document.querySelector('.config-form');
+  if (!form) return;
+
+  const inputs = form.querySelectorAll('input');
+  const updatedConfig = {};
+
+  for (const input of inputs) {
+    const key = input.name;
+    if (!key) continue;
+
+    if (input.type === 'number') {
+      updatedConfig[key] = parseInt(input.value, 10);
+    } else if (input.type === 'text') {
+      const val = input.value;
+      updatedConfig[key] = val.includes(',') ? val.split(',').map(v => v.trim()) : val;
+    }
+  }
+
+  if (!modifiedConfigs.has(fileName)) {
+    modifiedConfigs.set(fileName, new Map());
+  }
+
+  modifiedConfigs.get(fileName).set(presetTitle, updatedConfig);
+}
+
+
+async function exportAllPresets() {
+  const allPresets = {};
+
+  for (const [fileName, fileData] of Object.entries(fileMap)) {
+    if (fileData.presets && fileData.presets.length > 0) {
+      allPresets[fileName] = {
+        filePath: fileData.filePath,
+        presets: fileData.presets,
+      };
+    }
+  }
+
+  await window.api.saveJsonToFile(allPresets);
+}
+
+
+async function importAllPresets() {
+  const result = await window.api.loadJsonFromFile();
+  if (!result) return;
+
+  for (const [fileName, fileData] of Object.entries(result)) {
+    if (fileMap[fileName]) {
+      fileMap[fileName].presets = fileData.presets;
+    } else {
+      fileMap[fileName] = fileData;
+    }
+  }
+
+  // Re-render UI with selected file
+  const selectedFile = document.getElementById('fileSelector').value;
+  renderFile(selectedFile);
+}
+
+document.getElementById('syncToServerBtn').addEventListener('click', async () => {
+  const allPresets = {};
+
+  for (const [fileName, fileData] of Object.entries(fileMap)) {
+    if (fileData.presets?.length > 0) {
+      allPresets[fileName] = {
+        filePath: fileData.filePath,
+        presets: fileData.presets
+      };
+    }
+  }
+
+  try {
+    await window.api.syncPresetsToServer(allPresets);
+    alert('Synced to server.');
+  } catch (err) {
+    alert('Sync failed: ' + err.message);
+  }
+});
+
+document.getElementById('syncFromServerBtn').addEventListener('click', async () => {
+  try {
+    const data = await window.api.syncPresetsFromServer();
+    for (const [fileName, fileData] of Object.entries(data)) {
+      if (fileMap[fileName]) {
+        fileMap[fileName].presets = fileData.presets;
+      } else {
+        fileMap[fileName] = fileData;
+      }
+    }
+
+    const selectedFile = document.getElementById('fileSelector').value;
+    renderFile(selectedFile);
+    alert('Synced from server.');
+  } catch (err) {
+    alert('Sync failed: ' + err.message);
+  }
+});
