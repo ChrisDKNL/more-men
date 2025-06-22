@@ -46,10 +46,12 @@ function updatePresetInFile(filePath, presetObject) {
 
   // Step 3: Build the new config line
   const configTokens = Object.entries(config).map(([key, val]) => {
+    const safeValue = (v) => String(v).replace(/\)+$/, ''); // remove trailing ')'
+    
     if (Array.isArray(val)) {
-      return `${key}(${val.join(',')})`;
+      return `${key}(${val.map(safeValue).join(',')})`;
     } else {
-      return `${key}(${val})`;
+      return `${key}(${safeValue(val)})`;
     }
   });
 

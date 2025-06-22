@@ -75,10 +75,19 @@ function parsePreset(presetLines) {
 
   function parseValue(valueStr) {
     if (!valueStr) return null;
-    if (valueStr.includes(',')) return valueStr.split(',').map(v => v.trim());
-    const num = Number(valueStr);
-    return isNaN(num) ? valueStr : num;
+
+    // Helper to strip trailing ')'
+    const sanitize = (v) => v.replace(/\)+$/, '');
+
+    if (valueStr.includes(',')) {
+      return valueStr.split(',').map(v => sanitize(v.trim()));
+    }
+
+    const sanitized = sanitize(valueStr.trim());
+    const num = Number(sanitized);
+    return isNaN(num) ? sanitized : num;
   }
+
 
   const config = {};
   let configName = null;
