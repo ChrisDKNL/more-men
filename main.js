@@ -5,6 +5,7 @@ const fsp = require('fs/promises');
 const { parsePresetsFromFile } = require('./parser.js');
 const { updatePresetInFile } = require('./paster.js');
 const axios = require('axios');
+const { log } = require('console');
 
 
 // Electron store test
@@ -110,6 +111,7 @@ ipcMain.handle('sync-presets-from-server', async () => {
 });
 
 ipcMain.handle('load-presets-from-resource', async (_, resourceRoot) => {
+  console.log(`Loading presets from: ${resourceRoot}`);
   const presetDir = path.join(resourceRoot, 'set', 'multiplayer', 'games', 'presets');
 
   if (!fs.existsSync(presetDir)) {

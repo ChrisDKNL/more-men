@@ -4,7 +4,12 @@ const modifiedConfigs = new Map(); // Maps preset.title to updated config
 
 
 async function loadFromResource() {
-  const result = await window.api.loadPresetsFromResource();
+  const resourcePath = await window.api.getStoredResourceFolder();
+  if (resourcePath) {
+    await loadPresetsFrom(resourcePath);
+  }
+  
+  const result = await window.api.loadPresetsFromResource(resourcePath);
   if (!result) return;
 
   if (result.error) {
