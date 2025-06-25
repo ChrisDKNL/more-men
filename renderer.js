@@ -8,7 +8,7 @@ async function loadFromResource() {
   if (resourcePath) {
     await loadPresetsFrom(resourcePath);
   }
-  
+
   const result = await window.api.loadPresetsFromResource(resourcePath);
   if (!result) return;
 
@@ -138,9 +138,12 @@ function showPresetContent(preset) {
 }
 
 
-async function applyPreset() {
-  saveCurrentFormData(); // Save the last changes before applying
-
+async function applyPreset({ shouldReload = true } = {}) {
+  // saveCurrentFormData(); // Save the last changes before applying
+  if (modifiedConfigs.size === 0) {
+    alert('No modified presets to apply.');
+    return;
+  }
   const allUpdates = [];
 
   for (const [fileName, presetMap] of modifiedConfigs.entries()) {
@@ -169,10 +172,12 @@ async function applyPreset() {
     // ✅ Clear saved modifications
     modifiedConfigs.clear();
 
-    // 🔄 Reload resource folder
-    await loadFromResource();
-
-    alert('All presets applied and reloaded successfully.');
+    if (shouldReload) {
+      await loadFromResource();
+      alert('All presets applied and reloaded successfully.');
+    } else {
+      alert('All presets applied successfully.');
+    }
   } catch (err) {
     alert('Failed to apply one or more presets: ' + err.message);
   }
@@ -304,6 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadPresetsFrom(resourcePath) {
+  const currentStoredPath = await window.api.getStoredResourceFolder();
   const result = await window.api.loadPresetsFromResource(resourcePath);
   if (!result) return;
 
@@ -313,7 +319,9 @@ async function loadPresetsFrom(resourcePath) {
   }
 
   fileMap = result;
-  modifiedConfigs.clear();
+  if (resourcePath !== currentStoredPath) {
+    modifiedConfigs.clear();
+  }
 
   const fileSelector = document.getElementById('fileSelector');
   fileSelector.innerHTML = '';
@@ -336,3 +344,54 @@ async function loadPresetsFrom(resourcePath) {
   }
 }
 
+function showHomePage() {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <h2>Welcome to More-Men Config Editor</h2>
+    <button onclick="applyPreset({ shouldReload: false })">✅ Apply</button>
+    <button id="syncFromServerBtn">Sync from Server</button>
+  `;
+}
+
+function showPresetsPage() {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <h2>Settings</h2>
+    <div class="tab-container">
+      <div style="padding: 10px; background: #ddd;">
+        <select id="fileSelector" onchange="handleFileSelect()"></select>
+        <button onclick="applyPreset()">✅ Apply</button>
+        <button onclick="exportAllPresets()">Export to JSON</button>
+        <button onclick="importAllPresets()">Import JSON</button>
+        <button id="syncToServerBtn">Sync to Server</button>
+        <button id="syncFromServerBtn">Sync from Server</button>
+      </div>
+      <div class="tabs" id="tabs"></div>
+      <div class="tab-content" id="tabContent"></div>
+    </div>
+  `;
+  loadStoredFolderOnStartup();
+  renderPresetsUI(content);  
+}
+
+function showSettingsPage() {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <h2>Settings</h2>
+    <div class="tab-container">
+      <div style="padding: 10px; background: #ddd;">
+        <button onclick="setResourceFolder()">📁 Set Resource Folder</button>
+        <button onclick="applyPreset()">✅ Apply</button>
+        <button onclick="exportAllPresets()">Export Changes</button>
+        <button onclick="importAllPresets()">Import Changes</button>
+        <button id="syncToServerBtn">Sync to Server</button>
+        <button id="syncFromServerBtn">Sync from Server</button>
+      </div>
+    </div>
+  `;
+}
+
+async function clearStoredFolder() {
+  await window.api.clearStoredResourceFolder();
+  alert('Stored folder cleared');
+}

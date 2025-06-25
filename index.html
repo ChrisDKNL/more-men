@@ -42,19 +42,16 @@
   </style>
 </head>
 <body>
-  <div class="tab-container">
-    <div style="padding: 10px; background: #ddd;">
-      <button onclick="setResourceFolder()">📁 Set Resource Folder</button>
-      <select id="fileSelector" onchange="handleFileSelect()"></select>
-      <button onclick="applyPreset()">✅ Apply</button>
-      <button onclick="exportAllPresets()">Export Changes</button>
-      <button onclick="importAllPresets()">Import Changes</button>
-      <button id="syncToServerBtn">Sync to Server</button>
-      <button id="syncFromServerBtn">Sync from Server</button>
-    </div>
-    <div class="tabs" id="tabs"></div>
-    <div class="tab-content" id="tabContent"></div>
+  <div id="menu">
+    <button onclick="showHomePage()">Home</button>
+    <button onclick="showPresetsPage()">Presets</button>
+    <button onclick="showSettingsPage()">Settings</button>
   </div>
+
+  <div id="content">
+    <!-- This will be replaced dynamically -->
+  </div>
+
   <script src="renderer.js"></script>
 </body>
 </html>
