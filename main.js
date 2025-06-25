@@ -106,6 +106,10 @@ ipcMain.handle('sync-presets-from-server', async () => {
     const response = await axios.get('http://localhost:3000/download-presets');
     return response.data;
   } catch (err) {
+    if (err.code === 'ECONNREFUSED') {
+      // Server is not running
+      throw new Error('Cannot connect to server. Is it running?');
+    }
     throw new Error(`Download failed: ${err.message}`);
   }
 });

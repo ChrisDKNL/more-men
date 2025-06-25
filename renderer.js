@@ -270,7 +270,8 @@ document.getElementById('syncToServerBtn').addEventListener('click', async () =>
   }
 });
 
-document.getElementById('syncFromServerBtn').addEventListener('click', async () => {
+async function syncFromServer() {
+  console.log('Syncing from server...');
   try {
     const data = await window.api.syncPresetsFromServer();
     for (const [fileName, fileData] of Object.entries(data)) {
@@ -285,9 +286,11 @@ document.getElementById('syncFromServerBtn').addEventListener('click', async () 
     renderFile(selectedFile);
     alert('Synced from server.');
   } catch (err) {
-    alert('Sync failed: ' + err.message);
+    alert('Sync failed:' + err.message);
   }
-});
+}
+
+
 
 
 async function setResourceFolder() {
@@ -303,10 +306,6 @@ async function loadStoredFolderOnStartup() {
     await loadPresetsFrom(resourcePath);
   }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  loadStoredFolderOnStartup();
-});
 
 async function loadPresetsFrom(resourcePath) {
   const currentStoredPath = await window.api.getStoredResourceFolder();
@@ -349,7 +348,7 @@ function showHomePage() {
   content.innerHTML = `
     <h2>Welcome to More-Men Config Editor</h2>
     <button onclick="applyPreset({ shouldReload: false })">✅ Apply</button>
-    <button id="syncFromServerBtn">Sync from Server</button>
+    <button id="syncFromServerBtn" onclick="syncFromServer()">Sync from Server</button>
   `;
 }
 
@@ -395,3 +394,8 @@ async function clearStoredFolder() {
   await window.api.clearStoredResourceFolder();
   alert('Stored folder cleared');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOMContentLoaded fired');
+  showHomePage();
+});

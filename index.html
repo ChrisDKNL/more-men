@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Presets Viewer</title>
+  <script src="renderer.js"></script>
   <style>
     body {
       font-family: sans-serif;
@@ -51,7 +52,12 @@
   <div id="content">
     <!-- This will be replaced dynamically -->
   </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      showHomePage();
+    });
+  </script>
 
-  <script src="renderer.js"></script>
+
 </body>
 </html>

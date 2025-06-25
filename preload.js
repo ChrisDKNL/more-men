@@ -7,4 +7,6 @@ contextBridge.exposeInMainWorld('api', {
   applyPresetToFile: (filePath, preset) => ipcRenderer.invoke('apply-preset-to-file', filePath, preset),
   saveJsonToFile: (data) => ipcRenderer.invoke('save-json-to-file', data),
   loadJsonFromFile: () => ipcRenderer.invoke('load-json-from-file'),
+  syncPresetsFromServer: () => ipcRenderer.invoke('sync-presets-from-server'),
+  syncPresetsToServer: () => ipcRenderer.invoke('sync-presets-to-server'),
 });
