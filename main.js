@@ -43,8 +43,8 @@ let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 800,
+    width: 1920,
+    height: 1080,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -136,4 +136,8 @@ ipcMain.handle('load-presets-from-resource', async (_, resourceRoot) => {
   }
 
   return fileMap;
+});
+
+ipcMain.handle('clear-resource-path', () => {
+  store.delete('resourcePath');
 });

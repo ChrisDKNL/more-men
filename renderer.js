@@ -30,7 +30,14 @@ async function loadFromResource() {
     });
     const option = document.createElement('option');
     option.value = fileName;
-    option.textContent = fileName;
+    let displayName = fileName
+      .replace(/\.inc$/, '') 
+      .split('_')                  
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1)) 
+      .join(' ');
+    option.textContent = displayName;
+    console.log('Adding option:', displayName);
+
     fileSelector.appendChild(option);
   }
 
@@ -64,19 +71,29 @@ function renderTabs(presets) {
   tabsContainer.innerHTML = '';
   tabContent.innerHTML = '';
 
-  presets.forEach((preset, index) => {
+  // Filter presets to include only those with 'custom' in the config name
+  const customPresets = presets.filter(p => p.configName?.toLowerCase().includes('custom'));
+
+  customPresets.forEach((preset, index) => {
     const tab = document.createElement('div');
     tab.className = 'tab';
-    tab.textContent = preset.title;
+    let displayTitle = preset.title
+      .split('_')
+      .map((word, index) => {
+        if (index < 2) {
+          return word.charAt(0).toUpperCase() + word.slice(1);
+        }
+        return word;
+      })
+      .join(' ');
+    tab.textContent = displayTitle;
     tab.dataset.index = index;
 
     tab.addEventListener('click', () => {
-      // 💾 Save current tab's form data before switching
       saveCurrentFormData();
-
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      showPresetContent(presets[index]);
+      showPresetContent(preset);
     });
 
     tabsContainer.appendChild(tab);
@@ -86,7 +103,13 @@ function renderTabs(presets) {
       showPresetContent(preset);
     }
   });
+
+  // If no custom presets matched, show a message
+  if (customPresets.length === 0) {
+    tabContent.innerHTML = '<p>No custom game presets found.</p>';
+  }
 }
+
 
 
 function showPresetContent(preset) {
@@ -94,9 +117,18 @@ function showPresetContent(preset) {
   const fileName = document.getElementById('fileSelector').value;
   const saved = modifiedConfigs.get(fileName)?.get(preset.title);
   const config = saved ? saved : preset.config;
+  let displayTitle = preset.title
+  .split('_')
+  .map((word, index) => {
+    if (index < 2) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+    return word;
+  })
+  .join(' ');
 
   tabContent.innerHTML = `
-    <h2>${preset.title}</h2>
+    <h2>${displayTitle}</h2>
     <p><strong>Config Name:</strong> ${preset.configName}</p>
   `;
 
@@ -108,7 +140,42 @@ function showPresetContent(preset) {
     container.style.marginTop = '10px';
 
     const label = document.createElement('label');
-    label.textContent = key;
+    function formatKey(key) {
+      const nameMap = {
+        start: "Starting MP",
+        finish: "Final MP",
+        doctrine: "Doctrine Points",
+        cp: "Command Points",
+      };
+      const typeMap = {
+        a: "Players",
+        b: "AI",
+      };
+
+      const parts = key.split('_');
+
+      if (parts.length === 2) {
+        const [prefix, suffix] = parts;
+        const hasName = prefix in nameMap;
+        const hasType = suffix in typeMap;
+
+        if (hasName && hasType) {
+          return `${nameMap[prefix]} ${typeMap[suffix]}`;
+        } else if (hasName) {
+          return nameMap[prefix];
+        }
+      }
+
+      // Handle keys with no underscores
+      if (parts.length === 1 && key in nameMap) {
+        return nameMap[key];
+      }
+
+      return key; // fallback: return raw key if nothing matched
+    }
+
+    label.textContent = formatKey(key);
+    // console.log(label.textContent);
     label.style.fontWeight = 'bold';
     label.style.display = 'block';
 
@@ -145,6 +212,7 @@ async function applyPreset({ shouldReload = true } = {}) {
     return;
   }
   const allUpdates = [];
+  console.log('Applying modified presets:', modifiedConfigs);
 
   for (const [fileName, presetMap] of modifiedConfigs.entries()) {
     const fileInfo = fileMap[fileName];
@@ -186,6 +254,7 @@ async function applyPreset({ shouldReload = true } = {}) {
 
 
 function saveCurrentFormData() {
+  console.log('Saving current form data...');
   const fileName = document.getElementById('fileSelector').value;
   const activeTab = document.querySelector('.tab.active');
   if (!activeTab) return;
@@ -214,6 +283,7 @@ function saveCurrentFormData() {
   }
 
   modifiedConfigs.get(fileName).set(presetTitle, updatedConfig);
+  console.log(`Saved config for ${presetTitle} in ${fileName}:`, updatedConfig);
 }
 
 
@@ -329,7 +399,13 @@ async function loadPresetsFrom(resourcePath) {
     if (data.error) continue;
     const option = document.createElement('option');
     option.value = fileName;
-    option.textContent = fileName;
+    let displayName = fileName
+      .replace(/\.inc$/, '')                 
+      .split('_')                        
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1)) 
+      .join(' ');                
+
+    option.textContent = displayName;
     fileSelector.appendChild(option);
   }
 
@@ -343,21 +419,36 @@ async function loadPresetsFrom(resourcePath) {
   }
 }
 
+function clearResourcePath() {
+  window.api.clearResourcePath()
+    .then(() => {
+      alert('Resource folder cleared!');
+      location.reload(); // Optional: reload app after clearing
+    })
+    .catch(err => {
+      console.error('Failed to clear:', err);
+    });
+}
+
+
 function showHomePage() {
   const content = document.getElementById('content');
   content.innerHTML = `
-    <h2>Welcome to More-Men Config Editor</h2>
-    <button onclick="applyPreset({ shouldReload: false })">✅ Apply</button>
-    <button id="syncFromServerBtn" onclick="syncFromServer()">Sync from Server</button>
+    <div class="home-wrapper">
+      <h2>Welcome to More-Men Config Editor</h2>
+      <div class="home-buttons">
+        <button onclick="applyPreset({ shouldReload: false })">✅ Apply</button>
+        <button onclick="syncFromServer()">🔄 Sync from Server</button>
+      </div>
+    </div>
   `;
+  setActiveMenu('homeBtn');
 }
-
 function showPresetsPage() {
   const content = document.getElementById('content');
   content.innerHTML = `
-    <h2>Settings</h2>
-    <div class="tab-container">
-      <div style="padding: 10px; background: #ddd;">
+    <div class="tab-container" style="height: calc(100vh - 130px); display: flex; flex-direction: column;">
+      <div class="toolbar">
         <select id="fileSelector" onchange="handleFileSelect()"></select>
         <button onclick="applyPreset()">✅ Apply</button>
         <button onclick="exportAllPresets()">Export to JSON</button>
@@ -370,13 +461,13 @@ function showPresetsPage() {
     </div>
   `;
   loadStoredFolderOnStartup();
-  renderPresetsUI(content);  
+  // renderPresetsUI(content);
+  setActiveMenu('presetsBtn');
 }
 
 function showSettingsPage() {
   const content = document.getElementById('content');
   content.innerHTML = `
-    <h2>Settings</h2>
     <div class="tab-container">
       <div style="padding: 10px; background: #ddd;">
         <button onclick="setResourceFolder()">📁 Set Resource Folder</button>
@@ -385,10 +476,23 @@ function showSettingsPage() {
         <button onclick="importAllPresets()">Import Changes</button>
         <button id="syncToServerBtn">Sync to Server</button>
         <button id="syncFromServerBtn">Sync from Server</button>
+        <button onclick="clearResourcePath()">🧹 Clear Resource Folder</button>
       </div>
     </div>
   `;
+  setActiveMenu('settingsBtn');
 }
+
+function setActiveMenu(buttonId) {
+  document.querySelectorAll('#menu button').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  const activeBtn = document.getElementById(buttonId);
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+  }
+}
+
 
 async function clearStoredFolder() {
   await window.api.clearStoredResourceFolder();

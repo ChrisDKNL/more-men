@@ -9,4 +9,5 @@ contextBridge.exposeInMainWorld('api', {
   loadJsonFromFile: () => ipcRenderer.invoke('load-json-from-file'),
   syncPresetsFromServer: () => ipcRenderer.invoke('sync-presets-from-server'),
   syncPresetsToServer: () => ipcRenderer.invoke('sync-presets-to-server'),
+  clearResourcePath: () => ipcRenderer.invoke('clear-resource-path'),
 });
