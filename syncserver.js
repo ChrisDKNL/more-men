@@ -12,8 +12,22 @@ app.use(express.json({ limit: '5mb' }));
 
 // Upload presets from Electron app
 app.post('/upload-presets', (req, res) => {
-  fs.writeFileSync(PRESET_FILE, JSON.stringify(req.body, null, 2));
-  res.json({ success: true });
+  console.log('Received upload request:');
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+
+  if (!req.body || Object.keys(req.body).length === 0) {
+    console.error('No data received in request body.');
+    return res.status(400).json({ error: 'Empty body' });
+  }
+
+  try {
+    fs.writeFileSync(PRESET_FILE, JSON.stringify(req.body, null, 2));
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error writing file:', err);
+    res.status(500).json({ error: 'Failed to write presets' });
+  }
 });
 
 // Download presets to Electron app

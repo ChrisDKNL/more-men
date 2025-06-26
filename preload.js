@@ -6,8 +6,8 @@ contextBridge.exposeInMainWorld('api', {
   loadPresetsFromResource: (folderPath) => ipcRenderer.invoke('load-presets-from-resource', folderPath),
   applyPresetToFile: (filePath, preset) => ipcRenderer.invoke('apply-preset-to-file', filePath, preset),
   saveJsonToFile: (data) => ipcRenderer.invoke('save-json-to-file', data),
-  loadJsonFromFile: () => ipcRenderer.invoke('load-json-from-file'),
-  syncPresetsFromServer: () => ipcRenderer.invoke('sync-presets-from-server'),
-  syncPresetsToServer: () => ipcRenderer.invoke('sync-presets-to-server'),
+  loadJsonFromFile: (data) => ipcRenderer.invoke('load-json-from-file', data),
+  syncPresetsFromServer: (data) => ipcRenderer.invoke('sync-presets-from-server', data),
+  syncPresetsToServer: (data) => ipcRenderer.invoke('sync-presets-to-server', data),
   clearResourcePath: () => ipcRenderer.invoke('clear-resource-path'),
 });

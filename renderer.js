@@ -52,7 +52,7 @@ async function loadFromResource() {
 }
 
 function handleFileSelect() {
-  saveCurrentFormData(); // Save form before switching files
+  // saveCurrentFormData(); // Save form before switching files
   const selectedFile = document.getElementById('fileSelector').value;
   renderFile(selectedFile);
 }
@@ -90,7 +90,7 @@ function renderTabs(presets) {
     tab.dataset.index = index;
 
     tab.addEventListener('click', () => {
-      saveCurrentFormData();
+      // saveCurrentFormData();
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       showPresetContent(preset);
@@ -200,7 +200,17 @@ function showPresetContent(preset) {
     container.appendChild(input);
     form.appendChild(container);
   }
+  const applyBtn = document.createElement('button');
+  applyBtn.type = 'button'; // prevent form submit
+  applyBtn.textContent = 'Apply Changes';
+  applyBtn.style.marginTop = '15px';
 
+  applyBtn.addEventListener('click', () => {
+    saveFormData(preset.title, fileName, form);
+    alert(`Changes for "${displayTitle}" saved. Click the global Apply button to commit.`);
+  });
+
+  form.appendChild(applyBtn);
   tabContent.appendChild(form);
 }
 
@@ -253,14 +263,40 @@ async function applyPreset({ shouldReload = true } = {}) {
 
 
 
-function saveCurrentFormData() {
-  console.log('Saving current form data...');
-  const fileName = document.getElementById('fileSelector').value;
-  const activeTab = document.querySelector('.tab.active');
-  if (!activeTab) return;
+// function saveCurrentFormData() {
+//   console.log('Saving current form data...');
+//   const fileName = document.getElementById('fileSelector').value;
+//   const activeTab = document.querySelector('.tab.active');
+//   if (!activeTab) return;
 
-  const presetTitle = activeTab.textContent;
-  const form = document.querySelector('.config-form');
+//   const presetTitle = activeTab.textContent;
+//   const form = document.querySelector('.config-form');
+//   if (!form) return;
+
+//   const inputs = form.querySelectorAll('input');
+//   const updatedConfig = {};
+
+//   for (const input of inputs) {
+//     const key = input.name;
+//     if (!key) continue;
+
+//     if (input.type === 'number') {
+//       updatedConfig[key] = parseInt(input.value, 10);
+//     } else if (input.type === 'text') {
+//       const val = input.value;
+//       updatedConfig[key] = val.includes(',') ? val.split(',').map(v => v.trim()) : val;
+//     }
+//   }
+
+//   if (!modifiedConfigs.has(fileName)) {
+//     modifiedConfigs.set(fileName, new Map());
+//   }
+
+//   modifiedConfigs.get(fileName).set(presetTitle, updatedConfig);
+//   console.log(`Saved config for ${presetTitle} in ${fileName}:`, updatedConfig);
+// }
+
+function saveFormData(presetTitle, fileName, form) {
   if (!form) return;
 
   const inputs = form.querySelectorAll('input');
@@ -285,6 +321,7 @@ function saveCurrentFormData() {
   modifiedConfigs.get(fileName).set(presetTitle, updatedConfig);
   console.log(`Saved config for ${presetTitle} in ${fileName}:`, updatedConfig);
 }
+
 
 
 async function exportAllPresets() {
@@ -320,7 +357,8 @@ async function importAllPresets() {
   renderFile(selectedFile);
 }
 
-document.getElementById('syncToServerBtn').addEventListener('click', async () => {
+async function syncToServer() {
+  console.log('fileMap content:', fileMap);  // Check what's inside
   const allPresets = {};
 
   for (const [fileName, fileData] of Object.entries(fileMap)) {
@@ -332,13 +370,17 @@ document.getElementById('syncToServerBtn').addEventListener('click', async () =>
     }
   }
 
+  console.log('allPresets to send:', allPresets);
+
   try {
     await window.api.syncPresetsToServer(allPresets);
     alert('Synced to server.');
   } catch (err) {
     alert('Sync failed: ' + err.message);
   }
-});
+}
+
+
 
 async function syncFromServer() {
   console.log('Syncing from server...');
@@ -453,8 +495,8 @@ function showPresetsPage() {
         <button onclick="applyPreset()">✅ Apply</button>
         <button onclick="exportAllPresets()">Export to JSON</button>
         <button onclick="importAllPresets()">Import JSON</button>
-        <button id="syncToServerBtn">Sync to Server</button>
-        <button id="syncFromServerBtn">Sync from Server</button>
+        <button onclick="syncToServer()">Sync to Server</button>
+        <button onclick="syncFromServer()">🔄 Sync from Server</button>
       </div>
       <div class="tabs" id="tabs"></div>
       <div class="tab-content" id="tabContent"></div>

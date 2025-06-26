@@ -93,8 +93,11 @@ ipcMain.handle('load-json-from-file', async () => {
 });
 
 ipcMain.handle('sync-presets-to-server', async (_, data) => {
+  console.log('Received data in main:', data);  // Debug: check what you get
   try {
-    const response = await axios.post('http://localhost:3000/upload-presets', data);
+    const response = await axios.post('http://localhost:3000/upload-presets', data, {
+      headers: { 'Content-Type': 'application/json' }
+    });
     return response.data;
   } catch (err) {
     throw new Error(`Upload failed: ${err.message}`);
