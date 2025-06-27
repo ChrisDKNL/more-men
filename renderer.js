@@ -523,6 +523,9 @@ function showHomePage() {
       <div class="tab-content" id="tabContent"></div>
     </div>
   `;
+  // Restore active state from storage
+  const darkMode = localStorage.getItem('darkMode') === 'true';
+  document.body.classList.toggle('dark-mode', darkMode);
   loadStoredFolderOnStartup();
   setActiveMenu('homeBtn');
 }
@@ -550,18 +553,27 @@ function showPresetsPage() {
 function showSettingsPage() {
   const content = document.getElementById('content');
   content.innerHTML = `
-    <div class="tab-container">
-      <div style="padding: 10px; background: #ddd;">
-        <button onclick="setResourceFolder()">📁 Set Resource Folder</button>
-        <button onclick="applyPreset()">✅ Apply</button>
-        <button onclick="exportAllPresets()">Export Changes</button>
-        <button onclick="importAllPresets()">Import Changes</button>
-        <button id="syncToServerBtn">Sync to Server</button>
-        <button id="syncFromServerBtn">Sync from Server</button>
-        <button onclick="clearResourcePath()">🧹 Clear Resource Folder</button>
-      </div>
+    <div class="toolbar">
+      <button onclick="setResourceFolder()">📁 Set Resource Folder</button>
+      <button onclick="clearResourcePath()">🧹 Clear Resource Folder</button>
+      <label for="darkModeToggle">🌙 Dark Mode</label>
+      <input type="checkbox" id="darkModeToggle">
     </div>
   `;
+  // Restore active state from storage
+  const darkMode = localStorage.getItem('darkMode') === 'true';
+  document.body.classList.toggle('dark-mode', darkMode);
+
+  // Set toggle checkbox to reflect current mode
+  const toggle = document.getElementById('darkModeToggle');
+  if (toggle) {
+    toggle.checked = darkMode;
+
+    toggle.addEventListener('change', () => {
+      document.body.classList.toggle('dark-mode', toggle.checked);
+      localStorage.setItem('darkMode', toggle.checked);
+    });
+  }
   setActiveMenu('settingsBtn');
 }
 

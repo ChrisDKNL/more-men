@@ -208,3 +208,100 @@ pre {
   border-color: #2980b9;
   box-shadow: 0 0 5px #2980b9aa;
 }
+body.dark-mode {
+  background: #1e1e1e;
+  color: #e0e0e0;
+}
+
+body.dark-mode #menu {
+  background: #1c1c1c;
+}
+
+body.dark-mode #menu button {
+  background: #2b2b2b;
+  border-right: 1px solid #1c1c1c;
+  color: #fff;
+}
+
+body.dark-mode #menu button:hover {
+  background: #3a3a3a;
+}
+
+body.dark-mode #menu button.active {
+  background: #16a085;
+}
+
+body.dark-mode h2,
+body.dark-mode .home-wrapper h2 {
+  color: #ffffff;
+}
+
+body.dark-mode .home-buttons button {
+  background-color: #16a085;
+}
+
+body.dark-mode .home-buttons button:hover {
+  background-color: #138d75;
+}
+
+body.dark-mode .toolbar {
+  background-color: #2b2b2b;
+}
+
+body.dark-mode .toolbar button {
+  background-color: #3498db;
+}
+
+body.dark-mode .toolbar button:hover {
+  background-color: #217dbb;
+}
+
+body.dark-mode .toolbar select {
+  background: #444;
+  color: #fff;
+  border-color: #666;
+}
+
+body.dark-mode .tabs {
+  background-color: #2b2b2b;
+}
+
+body.dark-mode .tab {
+  background-color: #444;
+  color: #ccc;
+}
+
+body.dark-mode .tab:hover {
+  background-color: #555;
+}
+
+body.dark-mode .tab.active {
+  background-color: #3498db;
+  color: white;
+}
+
+body.dark-mode .tab-content {
+  background: #262626;
+  color: #e0e0e0;
+  box-shadow: inset 0 0 10px #111;
+}
+
+body.dark-mode pre {
+  background: #1f1f1f;
+  color: #eee;
+}
+
+body.dark-mode .tab-content input,
+body.dark-mode .tab-content select,
+body.dark-mode .tab-content textarea {
+  background-color: #2b2b2b;
+  color: #f0f0f0;
+  border-color: #555;
+}
+
+body.dark-mode .tab-content input:focus,
+body.dark-mode .tab-content select:focus,
+body.dark-mode .tab-content textarea:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 5px #3498db99;
+}
