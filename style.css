@@ -121,16 +121,17 @@ pre {
   padding: 10px;
   background-color: #ecf0f1;
   border-radius: 6px 6px 0 0;
-  min-width: 0; /* allow shrinking */
 }
 
-.toolbar button,
 .toolbar select {
-  min-width: 110px;      /* prevent buttons from shrinking too much */
-  flex-shrink: 0;        /* don't shrink buttons */
-  font-size: 14px;
   padding: 8px 12px;
-  box-sizing: border-box;
+  font-size: 15px;
+  border-radius: 6px;
+  border: 1px solid #bbb;
+  background: white;
+  cursor: pointer;
+  min-width: 180px;
+  flex-shrink: 0;
 }
 
 .toolbar button {
@@ -144,25 +145,10 @@ pre {
   transition: background 0.2s ease;
   box-shadow: 0 2px 5px rgba(0,0,0,0.15);
   flex-shrink: 0;
-  white-space: nowrap;   /* keep button text on one line */
 }
 
 .toolbar button:hover {
   background-color: #1c5980;
-}
-
-.toolbar select {
-  padding: 8px 12px;
-  font-size: 15px;
-  border-radius: 6px;
-  border: 1px solid #bbb;
-  background: white;
-  cursor: pointer;
-  min-width: 150px;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex-shrink: 0;
 }
 
 .tabs {
@@ -331,13 +317,4 @@ body.dark-mode .tab-content select:focus,
 body.dark-mode .tab-content textarea:focus {
   border-color: #3498db;
   box-shadow: 0 0 5px #3498db99;
-}
-
-/* Responsive: stack toolbar items on small screens */
-@media (max-width: 700px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-  }
 }
