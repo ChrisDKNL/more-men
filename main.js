@@ -40,17 +40,38 @@ ipcMain.handle('get-stored-resource-folder', () => {
 
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 let mainWindow;
+let splash;
 
 function createWindow() {
+  splash = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,
+    alwaysOnTop: true,
+    transparent: false,
+    backgroundColor: '#1e1e1e',
+    show: true,
+  });
+
+  splash.loadFile('splash.html');
+
   mainWindow = new BrowserWindow({
     width: 1920,
     height: 1080,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
 
   mainWindow.loadFile('index.html');
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    setTimeout(() => {
+      splash.close();       // Hide splash after main window is ready
+      mainWindow.show();
+    }, 200); // Optional: short delay to ensure smooth transition
+  });
 }
 
 app.whenReady().then(createWindow);
