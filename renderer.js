@@ -1,6 +1,8 @@
 let fileMap = {};
 let currentPresets = [];
 const modifiedConfigs = new Map(); // Maps preset.title to updated config
+let isSynced = false;
+let syncedData = {};
 
 
 async function loadFromResource() {
@@ -90,7 +92,7 @@ function renderTabs(presets) {
     tab.dataset.index = index;
 
     tab.addEventListener('click', () => {
-      // saveCurrentFormData();
+      // saveFormData(preset.title, fileName, form);
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       showPresetContent(preset);
@@ -216,39 +218,57 @@ function showPresetContent(preset) {
 
 
 async function applyPreset({ shouldReload = true } = {}) {
-  // saveCurrentFormData(); // Save the last changes before applying
-  if (modifiedConfigs.size === 0) {
+  const updatesToApply = [];
+  const sourceMap = isSynced ? syncedData : fileMap;
+
+  if (!isSynced && modifiedConfigs.size === 0) {
     alert('No modified presets to apply.');
     return;
   }
-  const allUpdates = [];
-  console.log('Applying modified presets:', modifiedConfigs);
 
-  for (const [fileName, presetMap] of modifiedConfigs.entries()) {
-    const fileInfo = fileMap[fileName];
-    if (!fileInfo || !fileInfo.presets || !fileInfo.filePath) continue;
+  console.log('Applying presets:', isSynced ? '[from sync]' : '[local modified configs]');
 
-    for (const [presetTitle, updatedConfig] of presetMap.entries()) {
-      const originalPreset = fileInfo.presets.find(p => p.title === presetTitle);
-      if (!originalPreset) continue;
+  if (isSynced) {
+    for (const [fileName, fileData] of Object.entries(syncedData)) {
+      if (!fileData || !fileData.presets || !fileData.filePath) continue;
 
-      const updatedPreset = {
-        ...originalPreset,
-        config: updatedConfig,
-      };
+      for (const preset of fileData.presets) {
+        updatesToApply.push(
+          window.api.applyPresetToFile(fileData.filePath, preset)
+        );
+      }
+    }
+  } else {
+    for (const [fileName, presetMap] of modifiedConfigs.entries()) {
+      const fileInfo = fileMap[fileName];
+      if (!fileInfo || !fileInfo.presets || !fileInfo.filePath) continue;
 
-      // Push update promise
-      allUpdates.push(
-        window.api.applyPresetToFile(fileInfo.filePath, updatedPreset)
-      );
+      for (const [presetTitle, updatedConfig] of presetMap.entries()) {
+        const originalPreset = fileInfo.presets.find(p => p.title === presetTitle);
+        if (!originalPreset) continue;
+
+        const updatedPreset = {
+          ...originalPreset,
+          config: updatedConfig,
+        };
+
+        updatesToApply.push(
+          window.api.applyPresetToFile(fileInfo.filePath, updatedPreset)
+        );
+      }
     }
   }
 
   try {
-    await Promise.all(allUpdates);
+    await Promise.all(updatesToApply);
 
-    // ✅ Clear saved modifications
-    modifiedConfigs.clear();
+    // Clear sync state or modifications
+    if (isSynced) {
+      isSynced = false;
+      syncedData = {};
+    } else {
+      modifiedConfigs.clear();
+    }
 
     if (shouldReload) {
       await loadFromResource();
@@ -260,6 +280,7 @@ async function applyPreset({ shouldReload = true } = {}) {
     alert('Failed to apply one or more presets: ' + err.message);
   }
 }
+
 
 
 
@@ -358,7 +379,7 @@ async function importAllPresets() {
 }
 
 async function syncToServer() {
-  console.log('fileMap content:', fileMap);  // Check what's inside
+  // console.log('fileMap content:', fileMap);  // Check what's inside
   const allPresets = {};
 
   for (const [fileName, fileData] of Object.entries(fileMap)) {
@@ -381,11 +402,11 @@ async function syncToServer() {
 }
 
 
-
 async function syncFromServer() {
   console.log('Syncing from server...');
   try {
     const data = await window.api.syncPresetsFromServer();
+
     for (const [fileName, fileData] of Object.entries(data)) {
       if (fileMap[fileName]) {
         fileMap[fileName].presets = fileData.presets;
@@ -394,13 +415,19 @@ async function syncFromServer() {
       }
     }
 
+    syncedData = data;
+    isSynced = true;
+
     const selectedFile = document.getElementById('fileSelector').value;
     renderFile(selectedFile);
     alert('Synced from server.');
   } catch (err) {
-    alert('Sync failed:' + err.message);
+    alert('Sync failed: ' + err.message);
+    isSynced = false;
+    syncedData = {};
   }
 }
+
 
 
 
@@ -483,7 +510,20 @@ function showHomePage() {
         <button onclick="syncFromServer()">🔄 Sync from Server</button>
       </div>
     </div>
+    <div class="tab-container" style="display: none;">
+      <div class="toolbar">
+        <select id="fileSelector" onchange="handleFileSelect()"></select>
+        <button onclick="applyPreset()">✅ Apply</button>
+        <button onclick="exportAllPresets()">Export to JSON</button>
+        <button onclick="importAllPresets()">Import JSON</button>
+        <button onclick="syncToServer()">Sync to Server</button>
+        <button onclick="syncFromServer()">🔄 Sync from Server</button>
+      </div>
+      <div class="tabs" id="tabs"></div>
+      <div class="tab-content" id="tabContent"></div>
+    </div>
   `;
+  loadStoredFolderOnStartup();
   setActiveMenu('homeBtn');
 }
 function showPresetsPage() {
