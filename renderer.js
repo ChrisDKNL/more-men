@@ -5,6 +5,79 @@ let isSynced = false;
 let syncedData = {};
 
 
+function showModal(message, defaultValue = '', isInput = false) {
+  return new Promise((resolve) => {
+    // Create modal elements
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.5)';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.zIndex = '9999';
+
+    const box = document.createElement('div');
+    box.style.background = '#222';
+    box.style.color = '#fff';
+    box.style.padding = '30px';
+    box.style.borderRadius = '8px';
+    box.style.boxShadow = '0 2px 12px #0008';
+    box.style.minWidth = '320px';
+    box.style.textAlign = 'center';
+
+    const msg = document.createElement('div');
+    msg.textContent = message;
+    msg.style.marginBottom = '18px';
+    box.appendChild(msg);
+
+    let input;
+    if (isInput) {
+      input = document.createElement('input');
+      input.type = 'text';
+      input.value = defaultValue;
+      input.style.width = '90%';
+      input.style.marginBottom = '18px';
+      box.appendChild(input);
+    } else if (defaultValue) {
+      // Show the token in a selectable box
+      const tokenBox = document.createElement('div');
+      tokenBox.textContent = defaultValue;
+      tokenBox.style.background = '#333';
+      tokenBox.style.padding = '10px';
+      tokenBox.style.borderRadius = '4px';
+      tokenBox.style.marginBottom = '18px';
+      tokenBox.style.userSelect = 'all';
+      tokenBox.style.wordBreak = 'break-all';
+      box.appendChild(tokenBox);
+    }
+
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'OK';
+    okBtn.style.marginRight = '10px';
+    okBtn.onclick = () => {
+      document.body.removeChild(modal);
+      resolve(isInput ? input.value : null);
+    };
+
+    box.appendChild(okBtn);
+
+    if (isInput) {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') okBtn.click();
+      });
+      setTimeout(() => input.focus(), 100);
+    }
+
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+  });
+}
+
+
 async function loadFromResource() {
   const resourcePath = await window.api.getStoredResourceFolder();
   if (resourcePath) {
@@ -378,10 +451,30 @@ async function importAllPresets() {
   renderFile(selectedFile);
 }
 
-async function syncToServer() {
-  // console.log('fileMap content:', fileMap);  // Check what's inside
-  const allPresets = {};
 
+let apiToken = localStorage.getItem('apiToken') || '';
+
+async function ensureApiToken() {
+  if (!apiToken) {
+    apiToken = await showModal('Enter your API token (from the server):', '', true);
+    if (apiToken) {
+      localStorage.setItem('apiToken', apiToken);
+    }
+  }
+}
+
+async function setApiToken() {
+  const newToken = await showModal('Enter your API token (from the server):', '', true);
+  if (newToken) {
+    localStorage.setItem('apiToken', newToken);
+    apiToken = newToken;
+    alert('API token set!');
+  }
+}
+
+async function syncToServer() {
+  await ensureApiToken();
+  const allPresets = {};
   for (const [fileName, fileData] of Object.entries(fileMap)) {
     if (fileData.presets?.length > 0) {
       allPresets[fileName] = {
@@ -390,23 +483,19 @@ async function syncToServer() {
       };
     }
   }
-
-  console.log('allPresets to send:', allPresets);
-
   try {
-    await window.api.syncPresetsToServer(allPresets);
+    console.log('Syncing presets to server:', allPresets, 'With token:', apiToken );
+    const response = await window.api.syncPresetsToServer(allPresets, apiToken);
     alert('Synced to server.');
   } catch (err) {
     alert('Sync failed: ' + err.message);
   }
 }
 
-
 async function syncFromServer() {
-  console.log('Syncing from server...');
+  await ensureApiToken();
   try {
-    const data = await window.api.syncPresetsFromServer();
-
+    const data = await window.api.syncPresetsFromServer(apiToken);
     for (const [fileName, fileData] of Object.entries(data)) {
       if (fileMap[fileName]) {
         fileMap[fileName].presets = fileData.presets;
@@ -414,10 +503,8 @@ async function syncFromServer() {
         fileMap[fileName] = fileData;
       }
     }
-
     syncedData = data;
     isSynced = true;
-
     const selectedFile = document.getElementById('fileSelector').value;
     renderFile(selectedFile);
     alert('Synced from server.');
@@ -556,6 +643,7 @@ function showSettingsPage() {
     <div class="toolbar">
       <button onclick="setResourceFolder()">📁 Set Resource Folder</button>
       <button onclick="clearResourcePath()">🧹 Clear Resource Folder</button>
+      <button onclick="setApiToken()">🔑 Set API Token</button>
       <label for="darkModeToggle">🌙 Dark Mode</label>
       <input type="checkbox" id="darkModeToggle">
     </div>

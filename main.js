@@ -1,3 +1,15 @@
+const originalRequire = require;
+require = function (moduleName) {
+  const start = process.hrtime.bigint();
+  const result = originalRequire(moduleName);
+  const duration = Number(process.hrtime.bigint() - start) / 1e6; // ms
+  if (duration > 5) { // log only "slow" requires
+    console.log(`[require] ${moduleName} took ${duration.toFixed(2)}ms`);
+  }
+  return result;
+};
+
+
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -43,6 +55,7 @@ let mainWindow;
 let splash;
 
 function createWindow() {
+  console.log('Creating main window...');
   splash = new BrowserWindow({
     width: 400,
     height: 300,
@@ -113,28 +126,30 @@ ipcMain.handle('load-json-from-file', async () => {
   return JSON.parse(content);
 });
 
-ipcMain.handle('sync-presets-to-server', async (_, data) => {
-  console.log('Received data in main:', data);  // Debug: check what you get
+ipcMain.handle('sync-presets-to-server', async (_, data, apiToken) => {
   try {
     const response = await axios.post('http://localhost:3000/upload-presets', data, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-token': apiToken
+      }
     });
     return response.data;
   } catch (err) {
-    throw new Error(`Upload failed: ${err.message}`);
+    throw new Error(`Upload failed: ${err.response?.data?.error || err.message}`);
   }
 });
 
-ipcMain.handle('sync-presets-from-server', async () => {
+ipcMain.handle('sync-presets-from-server', async (_, apiToken) => {
   try {
-    const response = await axios.get('http://localhost:3000/download-presets');
+    const response = await axios.get('http://localhost:3000/download-presets', {
+      headers: {
+        'x-api-token': apiToken
+      }
+    });
     return response.data;
   } catch (err) {
-    if (err.code === 'ECONNREFUSED') {
-      // Server is not running
-      throw new Error('Cannot connect to server. Is it running?');
-    }
-    throw new Error(`Download failed: ${err.message}`);
+    throw new Error(`Download failed: ${err.response?.data?.error || err.message}`);
   }
 });
 

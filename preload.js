@@ -8,6 +8,6 @@ contextBridge.exposeInMainWorld('api', {
   saveJsonToFile: (data) => ipcRenderer.invoke('save-json-to-file', data),
   loadJsonFromFile: (data) => ipcRenderer.invoke('load-json-from-file', data),
   syncPresetsFromServer: (data) => ipcRenderer.invoke('sync-presets-from-server', data),
-  syncPresetsToServer: (data) => ipcRenderer.invoke('sync-presets-to-server', data),
+  syncPresetsToServer: (data, apiToken) => ipcRenderer.invoke('sync-presets-to-server', data, apiToken),
   clearResourcePath: () => ipcRenderer.invoke('clear-resource-path'),
 });
