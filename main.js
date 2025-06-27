@@ -126,9 +126,9 @@ ipcMain.handle('load-json-from-file', async () => {
   return JSON.parse(content);
 });
 
-ipcMain.handle('sync-presets-to-server', async (_, data, apiToken) => {
+ipcMain.handle('sync-presets-to-server', async (_, data, apiToken, serverHost = 'localhost') => {
   try {
-    const response = await axios.post('http://localhost:3000/upload-presets', data, {
+    const response = await axios.post(`http://${serverHost}:3000/upload-presets`, data, {
       headers: {
         'Content-Type': 'application/json',
         'x-api-token': apiToken
@@ -140,9 +140,9 @@ ipcMain.handle('sync-presets-to-server', async (_, data, apiToken) => {
   }
 });
 
-ipcMain.handle('sync-presets-from-server', async (_, apiToken) => {
+ipcMain.handle('sync-presets-from-server', async (_, apiToken, serverHost = 'localhost') => {
   try {
-    const response = await axios.get('http://localhost:3000/download-presets', {
+    const response = await axios.get(`http://${serverHost}:3000/download-presets`, {
       headers: {
         'x-api-token': apiToken
       }

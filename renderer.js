@@ -453,6 +453,25 @@ async function importAllPresets() {
 
 
 let apiToken = localStorage.getItem('apiToken') || '';
+let serverHost = localStorage.getItem('serverHost') || 'localhost';
+
+async function ensureServerHost() {
+  if (!serverHost) {
+    serverHost = await showModal('Enter your server host (e.g. localhost or 192.168.1.10):', '', true);
+    if (serverHost) {
+      localStorage.setItem('serverHost', serverHost);
+    }
+  }
+}
+
+async function setServerHost() {
+  const newHost = await showModal('Enter your server host (e.g. localhost or 192.168.1.10):', serverHost, true);
+  if (newHost) {
+    localStorage.setItem('serverHost', newHost);
+    serverHost = newHost;
+    alert('Server host set!');
+  }
+}
 
 async function ensureApiToken() {
   if (!apiToken) {
@@ -474,6 +493,7 @@ async function setApiToken() {
 
 async function syncToServer() {
   await ensureApiToken();
+  await ensureServerHost();
   const allPresets = {};
   for (const [fileName, fileData] of Object.entries(fileMap)) {
     if (fileData.presets?.length > 0) {
@@ -484,8 +504,7 @@ async function syncToServer() {
     }
   }
   try {
-    console.log('Syncing presets to server:', allPresets, 'With token:', apiToken );
-    const response = await window.api.syncPresetsToServer(allPresets, apiToken);
+    const response = await window.api.syncPresetsToServer(allPresets, apiToken, serverHost);
     alert('Synced to server.');
   } catch (err) {
     alert('Sync failed: ' + err.message);
@@ -494,8 +513,9 @@ async function syncToServer() {
 
 async function syncFromServer() {
   await ensureApiToken();
+  await ensureServerHost();
   try {
-    const data = await window.api.syncPresetsFromServer(apiToken);
+    const data = await window.api.syncPresetsFromServer(apiToken, serverHost);
     for (const [fileName, fileData] of Object.entries(data)) {
       if (fileMap[fileName]) {
         fileMap[fileName].presets = fileData.presets;
@@ -644,6 +664,7 @@ function showSettingsPage() {
       <button onclick="setResourceFolder()">📁 Set Resource Folder</button>
       <button onclick="clearResourcePath()">🧹 Clear Resource Folder</button>
       <button onclick="setApiToken()">🔑 Set API Token</button>
+      <button onclick="setServerHost()">🌐 Set Server Host</button>
       <label for="darkModeToggle">🌙 Dark Mode</label>
       <input type="checkbox" id="darkModeToggle">
     </div>
