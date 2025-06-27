@@ -470,6 +470,7 @@ async function setServerHost() {
     localStorage.setItem('serverHost', newHost);
     serverHost = newHost;
     alert('Server host set!');
+    showSettingsPage();
   }
 }
 
@@ -667,6 +668,9 @@ function showSettingsPage() {
       <button onclick="setServerHost()">🌐 Set Server Host</button>
       <label for="darkModeToggle">🌙 Dark Mode</label>
       <input type="checkbox" id="darkModeToggle">
+      <span id="serverHostDisplay" style="margin-left:auto; color:#0af;">
+        Server Host: <b>${serverHost}</b>
+      </span>
     </div>
   `;
   // Restore active state from storage
